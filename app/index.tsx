@@ -1,68 +1,90 @@
-import React, { useState, useEffect } from 'react';
-import { StyleSheet, Text, TextInput, View, Button, Alert, ImageBackground, FlatList, TouchableOpacity } from 'react-native';
-import { characters } from '../data/characters'; // Assurez-vous que le chemin est correct
-import { Character } from '../data/types'; // Assurez-vous que le type Character est correctement importé
+import React, { useEffect, useState } from 'react';
+import {
+  Text,
+  TextInput,
+  View,
+  Button,
+  ImageBackground,
+  FlatList,
+  TouchableOpacity,
+  ScrollView,
+  Animated, // Importer Animated
+} from 'react-native';
+import useGuessCharacterGame from '../src/GuessCharacterGame'; // Importer la logique du jeu
+import styles from '../src/styles'; // Importer les styles
 
-export default function GuessCharacterGame() {
-  const [inputValue, setInputValue] = useState<string>('');
-  const [randomCharacter, setRandomCharacter] = useState<Character | null>(null);
-  const [attempts, setAttempts] = useState<number>(0);
-  const [filteredCharacters, setFilteredCharacters] = useState<Character[]>([]);
+export default function GuessCharacterGameScreen() {
+  const {
+    inputValue,
+    setInputValue,
+    filteredCharacters,
+    attempts,
+    handleGuess,
+    selectSuggestion,
+    selectedCharacter,
+    guessedCharacters,
+  } = useGuessCharacterGame();
 
-  // Choisir un personnage aléatoire au chargement du composant
+  const [displayedCharacters, setDisplayedCharacters] = useState(guessedCharacters);
+  const [fadeAnim] = useState(new Animated.Value(0)); // Valeur d'animation pour le fondu
+
+  // Mettre à jour les personnages affichés dès que guessedCharacters change
   useEffect(() => {
-    pickRandomCharacter();
-  }, []);
+    setDisplayedCharacters([...guessedCharacters].reverse()); // Inverser l'ordre des personnages devinés
+  }, [guessedCharacters]);
 
-  // Mettre à jour les suggestions lorsque l'input change
-  useEffect(() => {
-    if (inputValue) {
-      const filtered = characters.filter(character =>
-        character.name.toLowerCase().includes(inputValue.toLowerCase())
-      );
-      setFilteredCharacters(filtered);
-    } else {
-      setFilteredCharacters([]);
-    }
-  }, [inputValue]);
-
-  // Fonction pour choisir un personnage aléatoire
-  const pickRandomCharacter = () => {
-    if (characters && characters.length > 0) {
-      const randomIndex = Math.floor(Math.random() * characters.length);
-      setRandomCharacter(characters[randomIndex]);
-      setAttempts(0); // Réinitialiser les tentatives
-    } else {
-      console.error("Le tableau 'characters' est vide ou non défini.");
-    }
+  // Fonction pour jouer l'animation de fondu
+  const fadeIn = () => {
+    Animated.timing(fadeAnim, {
+      toValue: 1, // Opacité finale
+      duration: 500, // Durée de l'animation en millisecondes
+      useNativeDriver: true, // Utiliser le driver natif pour de meilleures performances
+    }).start();
   };
 
-  const handleGuess = () => {
-    if (!randomCharacter) {
-      Alert.alert('Erreur', 'Aucun personnage sélectionné. Réessayez.');
-      return;
+  useEffect(() => {
+    if (selectedCharacter) {
+      fadeIn(); // Jouer l'animation de fondu lorsque selectedCharacter change
     }
-  
-    if (inputValue.toLowerCase() === randomCharacter.name.toLowerCase()) {
-      Alert.alert('Bravo !', `Tu as deviné ${randomCharacter.name} en ${attempts + 1} tentatives.`);
-      pickRandomCharacter(); // Choisir un nouveau personnage
-      setInputValue(''); // Réinitialiser l'input
-    } else {
-      setAttempts(attempts + 1);
-      Alert.alert('Non, ce n\'est pas le bon personnage.', 'Essayez encore !');
-    }
-  };
-  
+  }, [selectedCharacter]);
 
-  // Fonction pour sélectionner une suggestion
-  const selectSuggestion = (name: string) => {
-    setInputValue(name);
-    setFilteredCharacters([]); // Effacer les suggestions après sélection
+  const getColorForAttribute = (characterAttr: any, previousCharacterAttr: any) => {
+    return characterAttr === previousCharacterAttr ? 'green' : 'red';
+  };
+
+  const renderCharacterDetails = (character: any, previousCharacter: any, index: number) => {
+    if (!previousCharacter) return null;
+
+    const details = [
+      { label: 'Nom', value: character.name },
+      { label: 'Genre', value: character.gender, color: getColorForAttribute(character.gender, previousCharacter.gender) },
+      { label: 'Affiliation', value: character.affiliation, color: getColorForAttribute(character.affiliation, previousCharacter.affiliation) },
+      { label: 'Transformation', value: character.hasTransformation ? 'Oui' : 'Non', color: getColorForAttribute(character.hasTransformation, previousCharacter.hasTransformation) },
+      { label: 'Couleur', value: character.color, color: getColorForAttribute(character.color, previousCharacter.color) },
+      { label: 'Premier arc', value: character.firstArc, color: getColorForAttribute(character.firstArc, previousCharacter.firstArc) },
+      { label: 'Taille', value: character.height, color: getColorForAttribute(character.height, previousCharacter.height) },
+      { label: 'Âge', value: character.age, color: getColorForAttribute(character.age, previousCharacter.age) },
+      { label: 'Évolutions', value: character.evolutions, color: getColorForAttribute(character.evolutions, previousCharacter.evolutions) },
+    ];
+
+    return (
+      <Animated.View key={index} style={[styles.detailsContainer, { opacity: fadeAnim }]}>
+        <Text style={styles.detailsTitle}>Informations sur le personnage {index + 1} :</Text>
+        <ScrollView horizontal>
+          {details.map((detail, idx) => (
+            <View key={idx} style={[styles.detailBox, { backgroundColor: detail.color }]}>
+              <Text style={styles.detailLabel}>{detail.label} :</Text>
+              <Text style={styles.detailValue}>{detail.value}</Text>
+            </View>
+          ))}
+        </ScrollView>
+      </Animated.View>
+    );
   };
 
   return (
     <ImageBackground
-      source={require('@/assets/images/background.png')} // Assurez-vous que le chemin est correct
+      source={require('../assets/images/background.png')} // Assurez-vous que le chemin de l'image est correct
       style={styles.backgroundImage}
     >
       <View style={styles.overlay}>
@@ -71,6 +93,7 @@ export default function GuessCharacterGame() {
           <Text style={styles.description}>
             Un personnage a été choisi aléatoirement. Essayez de deviner son nom !
           </Text>
+
           <TextInput
             style={styles.input}
             placeholder="Entrez le nom du personnage"
@@ -78,7 +101,9 @@ export default function GuessCharacterGame() {
             value={inputValue}
             onChangeText={setInputValue}
           />
-          <Button title="Deviner" onPress={handleGuess} />
+
+          <Button title="Envoyer" onPress={handleGuess} />
+
           {filteredCharacters.length > 0 && (
             <FlatList
               data={filteredCharacters}
@@ -91,70 +116,19 @@ export default function GuessCharacterGame() {
               style={styles.suggestionList}
             />
           )}
+
           <Text style={styles.attempts}>Tentatives : {attempts}</Text>
+
+          {/* Affichage des détails des personnages devinés, du plus récent au plus ancien */}
+          {displayedCharacters.length > 0 && (
+            <View>
+              {displayedCharacters.map((character, index) => (
+                renderCharacterDetails(character, displayedCharacters[index - 1], index)
+              ))}
+            </View>
+          )}
         </View>
       </View>
     </ImageBackground>
   );
 }
-
-const styles = StyleSheet.create({
-  backgroundImage: {
-    flex: 1,
-    resizeMode: 'cover',
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  overlay: {
-    flex: 1,
-    width: '100%',
-    justifyContent: 'center',
-    alignItems: 'center',
-    backgroundColor: 'rgba(0, 0, 0, 0.3)',
-  },
-  container: {
-    width: '80%',
-    alignItems: 'center',
-    padding: 20,
-    borderRadius: 10,
-    backgroundColor: 'rgba(255, 255, 255, 0.7)',
-  },
-  title: {
-    fontSize: 24,
-    fontWeight: 'bold',
-    marginBottom: 16,
-    color: 'black',
-  },
-  description: {
-    fontSize: 16,
-    marginBottom: 16,
-    color: 'black',
-    textAlign: 'center',
-  },
-  input: {
-    height: 40,
-    borderColor: 'gray',
-    borderWidth: 1,
-    width: '100%',
-    paddingHorizontal: 8,
-    borderRadius: 5,
-    backgroundColor: 'white',
-    color: 'black',
-    marginBottom: 16,
-  },
-  attempts: {
-    marginTop: 10,
-    fontSize: 16,
-    color: 'black',
-  },
-  suggestionList: {
-    width: '100%',
-    maxHeight: 150, // Limiter la hauteur de la liste des suggestions
-    marginTop: 10,
-  },
-  suggestion: {
-    padding: 10,
-    borderBottomWidth: 1,
-    borderBottomColor: '#ccc',
-  },
-});
