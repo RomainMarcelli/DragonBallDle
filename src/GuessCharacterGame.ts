@@ -33,6 +33,8 @@ export default function useGuessCharacterGame() {
       const randomIndex = Math.floor(Math.random() * characters.length);
       setRandomCharacter(characters[randomIndex]);
       setAttempts(0); // Réinitialiser les tentatives
+      setInputValue(''); // Réinitialiser l'input quand on choisit un nouveau personnage
+      setSelectedCharacter(null); // Réinitialiser le personnage sélectionné
     } else {
       console.error("Le tableau 'characters' est vide ou non défini.");
     }
@@ -51,20 +53,24 @@ export default function useGuessCharacterGame() {
       character.name.toLowerCase() === inputValue.toLowerCase()
     );
 
+    // Mettre à jour le personnage sélectionné dès que l'utilisateur devine quelque chose
+    setSelectedCharacter(matchedCharacter || null); // Mettre à jour le personnage sélectionné
+
     if (matchedCharacter) {
-      setSelectedCharacter(matchedCharacter); // Mettre à jour le personnage sélectionné
       setGuessedCharacters([...guessedCharacters, matchedCharacter]); // Ajouter le personnage deviné à la liste
+
+      // Vérification de la bonne réponse
+      if (inputValue.toLowerCase() === randomCharacter.name.toLowerCase()) {
+        console.log(`Bravo ! Tu as deviné ${randomCharacter.name} en ${attempts + 1} tentatives.`);
+        setInputValue(''); // Réinitialiser l'input après succès
+        pickRandomCharacter(); // Choisir un nouveau personnage
+      } else {
+        setAttempts(attempts + 1);
+        console.log('Non, ce n\'est pas le bon personnage. Essayez encore !');
+      }
     } else {
       console.warn('Personnage introuvable. Veuillez réessayer.');
       setSelectedCharacter(null);
-    }
-
-    if (inputValue.toLowerCase() === randomCharacter.name.toLowerCase()) {
-      console.log(`Bravo ! Tu as deviné ${randomCharacter.name} en ${attempts + 1} tentatives.`);
-      setInputValue(''); // Réinitialiser l'input après succès
-    } else {
-      setAttempts(attempts + 1);
-      console.log('Non, ce n\'est pas le bon personnage. Essayez encore !');
     }
   };
 

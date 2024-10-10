@@ -1,6 +1,6 @@
 import React from 'react';
 import { View, Text, StyleSheet } from 'react-native';
-import styles from '../src/stylesDetails'; // Ou 'div' et 'span' si vous êtes sur une application web
+import styles from '../src/stylesDetails'; // Assurez-vous que le chemin est correct
 
 // Composant qui prend en props les détails d'un personnage
 const CharacterDetails = ({ character }: { character: any }) => {
@@ -30,12 +30,13 @@ const CharacterDetails = ({ character }: { character: any }) => {
         <Text style={styles.detailValue}>{character.affiliation}</Text>
       </View>
       
-      {/* Ajouter d'autres détails du personnage */}
+      {/* Race */}
       <View style={styles.detailBox}>
         <Text style={styles.detailLabel}>Race:</Text>
         <Text style={styles.detailValue}>{character.race}</Text>
       </View>
 
+      {/* Transformation */}
       <View style={styles.detailBox}>
         <Text style={styles.detailLabel}>Transformation:</Text>
         <Text style={styles.detailValue}>{character.transformation}</Text>

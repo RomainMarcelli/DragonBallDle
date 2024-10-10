@@ -8,10 +8,11 @@ import {
   FlatList,
   TouchableOpacity,
   ScrollView,
-  Animated, // Importer Animated
+  Animated,
 } from 'react-native';
-import useGuessCharacterGame from '../src/GuessCharacterGame'; // Importer la logique du jeu
-import styles from '../src/styles'; // Importer les styles
+import useGuessCharacterGame from '../src/GuessCharacterGame';
+import styles from '../src/styles';
+import { Character } from 'data/types';
 
 export default function GuessCharacterGameScreen() {
   const {
@@ -25,26 +26,24 @@ export default function GuessCharacterGameScreen() {
     guessedCharacters,
   } = useGuessCharacterGame();
 
-  const [displayedCharacters, setDisplayedCharacters] = useState(guessedCharacters);
-  const [fadeAnim] = useState(new Animated.Value(0)); // Valeur d'animation pour le fondu
+  const [displayedCharacters, setDisplayedCharacters] = useState<Character[]>(guessedCharacters);
+  const [fadeAnim] = useState(new Animated.Value(0));
 
-  // Mettre à jour les personnages affichés dès que guessedCharacters change
   useEffect(() => {
-    setDisplayedCharacters([...guessedCharacters].reverse()); // Inverser l'ordre des personnages devinés
+    setDisplayedCharacters([...guessedCharacters].reverse());
   }, [guessedCharacters]);
 
-  // Fonction pour jouer l'animation de fondu
   const fadeIn = () => {
     Animated.timing(fadeAnim, {
-      toValue: 1, // Opacité finale
-      duration: 500, // Durée de l'animation en millisecondes
-      useNativeDriver: true, // Utiliser le driver natif pour de meilleures performances
+      toValue: 1,
+      duration: 500,
+      useNativeDriver: true,
     }).start();
   };
 
   useEffect(() => {
     if (selectedCharacter) {
-      fadeIn(); // Jouer l'animation de fondu lorsque selectedCharacter change
+      fadeIn();
     }
   }, [selectedCharacter]);
 
@@ -52,7 +51,7 @@ export default function GuessCharacterGameScreen() {
     return characterAttr === previousCharacterAttr ? 'green' : 'red';
   };
 
-  const renderCharacterDetails = (character: any, previousCharacter: any, index: number) => {
+  const renderCharacterDetails = (character: Character, previousCharacter: Character | null, index: number) => {
     if (!previousCharacter) return null;
 
     const details = [
@@ -69,7 +68,7 @@ export default function GuessCharacterGameScreen() {
 
     return (
       <Animated.View key={index} style={[styles.detailsContainer, { opacity: fadeAnim }]}>
-        <Text style={styles.detailsTitle}>Informations sur le personnage {index + 1} :</Text>
+        <Text style={styles.detailsTitle}>Informations sur le personnage :</Text>
         <ScrollView horizontal>
           {details.map((detail, idx) => (
             <View key={idx} style={[styles.detailBox, { backgroundColor: detail.color }]}>
@@ -82,9 +81,28 @@ export default function GuessCharacterGameScreen() {
     );
   };
 
+  const handleGuessUpdated = () => {
+    handleGuess();
+
+    const matchedCharacter = filteredCharacters.find(character =>
+      character.name.toLowerCase() === inputValue.toLowerCase()
+    );
+
+    if (matchedCharacter) {
+      selectSuggestion(matchedCharacter.name);
+      setInputValue('');
+
+      // Ajoutez le personnage deviné à guessedCharacters
+      setDisplayedCharacters(prev => [...prev, matchedCharacter]);
+    }
+
+    console.log("Matched Character: ", matchedCharacter);
+    console.log("Guessed Characters: ", guessedCharacters);
+  };
+
   return (
     <ImageBackground
-      source={require('../assets/images/background.png')} // Assurez-vous que le chemin de l'image est correct
+      source={require('../assets/images/background.png')}
       style={styles.backgroundImage}
     >
       <View style={styles.overlay}>
@@ -102,7 +120,7 @@ export default function GuessCharacterGameScreen() {
             onChangeText={setInputValue}
           />
 
-          <Button title="Envoyer" onPress={handleGuess} />
+          <Button title="Envoyer" onPress={handleGuessUpdated} />
 
           {filteredCharacters.length > 0 && (
             <FlatList
